@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão de Despesas — Transporte</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #0d0f12;
+  color: #d4d8e0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ===== HEADER ===== */
+.header {
+  background: #0a0c10;
+  color: #fff;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.5);
+  border-bottom: 1px solid #1e2530;
+}
+.header svg { width: 28px; height: 28px; fill: #5b9cf5; }
+.header h1 { font-size: 18px; font-weight: 600; letter-spacing: .3px; }
+.header span { font-size: 12px; color: #6b7a8d; margin-left: auto; }
+
+/* ===== TABS ===== */
+.tabs {
+  display: flex;
+  background: #12151a;
+  border-bottom: 2px solid #1e2530;
+  padding: 0 16px;
+}
+.tab-btn {
+  padding: 12px 22px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7a8d;
+  border: none;
+  background: none;
+  border-bottom: 3px solid transparent;
+  transition: color .15s, border-color .15s;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.tab-btn:hover { color: #c0c8d4; }
+.tab-btn.active { color: #fff; border-bottom-color: #5b9cf5; }
+
+/* ===== CONTENT ===== */
+.content { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ===== CARDS & PANELS ===== */
+.card {
+  background: #161a21;
+  border: 1px solid #242a35;
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #e0e4ea;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #242a35;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== FORMS ===== */
+.form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  align-items: flex-end;
+}
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7a8a9e;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.form-group input, .form-group select, .form-group textarea {
+  padding: 8px 10px;
+  border: 1px solid #2e3644;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #d4d8e0;
+  background: #1a1f28;
+  outline: none;
+  transition: border-color .15s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: #5b9cf5;
+  background: #1e2430;
+}
+.form-group input[type="number"] { width: 130px; }
+.form-group select { min-width: 150px; }
+textarea { resize: vertical; min-height: 50px; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background .15s, opacity .15s;
+}
+.btn:hover { opacity: .85; }
+.btn-primary { background: #3478c6; color: #fff; }
+.btn-success { background: #268a4e; color: #fff; }
+.btn-danger { background: #c94040; color: #fff; }
+.btn-secondary { background: #3a4555; color: #d4d8e0; }
+.btn-outline {
+  background: transparent;
+  border: 1px solid #3a4555;
+  color: #8a9ab0;
+}
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* ===== TABLES ===== */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  text-align: left;
+  padding: 10px 12px;
+  background: #111419;
+  color: #7a8a9e;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  border-bottom: 2px solid #2e3644;
+}
+td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #1e2530;
+  vertical-align: middle;
+}
+tr:hover td { background: #1a1f28; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.text-bold { font-weight: 700; }
+.text-green { color: #4ade80; }
+.text-red { color: #f87171; }
+.text-blue { color: #60a5fa; }
+.text-muted { color: #5a6a80; font-size: 12px; }
+
+/* ===== FILTERS ===== */
+.filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #111419;
+  border: 1px solid #242a35;
+  border-radius: 6px;
+}
+
+/* ===== SUB-TABS ===== */
+.sub-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.sub-tab-btn {
+  padding: 8px 18px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7a8d;
+  border: 1px solid #242a35;
+  background: #111419;
+  border-radius: 4px 4px 0 0;
+  transition: all .15s;
+}
+.sub-tab-btn.active {
+  color: #e0e4ea;
+  background: #161a21;
+  border-bottom-color: #161a21;
+}
+
+/* ===== DRE SPECIFIC ===== */
+.dre-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 0;
+}
+.dre-table td {
+  padding: 7px 14px;
+  border-bottom: 1px solid #1e2530;
+}
+.dre-table tr:hover td { background: #1a1f28; }
+
+/* Nível de indentação DRE */
+.dre-l0 { padding-left: 14px !important; font-weight: 700; }
+.dre-l1 { padding-left: 32px !important; }
+.dre-l2 { padding-left: 52px !important; color: #8a9ab0; }
+.dre-l3 { padding-left: 72px !important; color: #5a6a80; font-size: 12px; }
+
+/* Linhas especiais DRE */
+.dre-row-header td {
+  background: #0a0c10 !important;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 14px;
+  border: none;
+}
+.dre-row-subtotal td {
+  background: #111419;
+  font-weight: 700;
+  color: #d4d8e0;
+  border-top: 2px solid #2e3644;
+  border-bottom: 2px solid #2e3644;
+}
+.dre-row-total td {
+  background: #1a1f28;
+  font-weight: 700;
+  font-size: 14px;
+  color: #e0e4ea;
+  border-top: 3px double #5b9cf5;
+  border-bottom: 3px double #5b9cf5;
+}
+.dre-row-grand td {
+  background: #0a0c10;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 12px 14px;
+  border: none;
+}
+.dre-row-separator td {
+  padding: 4px;
+  border: none;
+  background: transparent;
+}
+.dre-row-section td {
+  background: #1a1f28;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #60a5fa;
+  padding: 8px 14px;
+  border-bottom: 2px solid #2e3644;
+}
+.dre-sign {
+  display: inline-block;
+  width: 18px;
+  text-align: center;
+  font-weight: 700;
+}
+.dre-equal { color: #60a5fa; }
+.dre-minus { color: #f87171; }
+.dre-plus { color: #4ade80; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 1000;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 60px;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #161a21;
+  border: 1px solid #2e3644;
+  border-radius: 8px;
+  width: 700px;
+  max-width: 95vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 12px 50px rgba(0,0,0,.6);
+}
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #242a35;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  background: #161a21;
+  z-index: 1;
+}
+.modal-header h3 { font-size: 16px; font-weight: 700; color: #e0e4ea; }
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #6b7a8d;
+  padding: 4px 8px;
+}
+.modal-close:hover { color: #f87171; }
+.modal-body { padding: 20px; }
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid #242a35;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  position: sticky;
+  bottom: 0;
+  background: #161a21;
+}
+
+/* ===== MISC ===== */
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: #5a6a80;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-blue { background: #1a2744; color: #60a5fa; }
+.badge-green { background: #14332a; color: #4ade80; }
+.badge-orange { background: #33261a; color: #fbbf24; }
+.badge-red { background: #331a1a; color: #f87171; }
+.badge-gray { background: #1e2530; color: #8a9ab0; }
+.actions-cell { display: flex; gap: 4px; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mb-12 { margin-bottom: 12px; }
+.flex-1 { flex: 1; }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <svg viewBox="0 0 24 24"><path d="M18 18.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zM19.5 9.5L21.46 13H17V9.5h2.5zM6 18.5c.83 0 1.5-.67 1.5-1.5S6.83 15.5 6 15.5 4.5 16.17 4.5 17 5.17 18.5 6 18.5zM20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg>
+  <h1>Gestão de Despesas — Transporte</h1>
+  <span id="headerDate"></span>
+</div>
+
+<!-- ===== NAVIGATION TABS ===== -->
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('fichas')">&#9776; Fichas de Viagem</button>
+  <button class="tab-btn" onclick="switchTab('despesas')">&#9634; Despesas Gerais</button>
+  <button class="tab-btn" onclick="switchTab('dre')">&#9638; DRE Completo</button>
+  <button class="tab-btn" onclick="switchTab('gerenciamento')">&#9881; Gerenciamento</button>
+</div>
+
+<!-- ===== MAIN CONTENT ===== -->
+<div class="content">
+
+  <!-- ============ ABA 1: FICHAS DE VIAGEM ============ -->
+  <div id="tab-fichas" class="tab-panel active">
+    <div class="filters">
+      <div class="form-group">
+        <label>Veículo</label>
+        <select id="filtroFichaVeiculo" onchange="renderFichas()">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Mês/Ano</label>
+        <input type="month" id="filtroFichaMes" onchange="renderFichas()">
+      </div>
+      <button class="btn btn-primary" onclick="abrirModalFicha()">+ Nova Ficha</button>
+    </div>
+    <div class="card">
+      <div id="fichasTableContainer"></div>
+    </div>
+  </div>
+
+  <!-- ============ ABA 2: DESPESAS GERAIS ============ -->
+  <div id="tab-despesas" class="tab-panel">
+    <div class="filters">
+      <div class="form-group">
+        <label>Mês/Ano</label>
+        <input type="month" id="filtroDespMes" onchange="renderDespesas()">
+      </div>
+      <button class="btn btn-primary" onclick="abrirModalDespesa()">+ Nova Despesa</button>
+    </div>
+    <div class="card">
+      <div id="despesasTableContainer"></div>
+    </div>
+  </div>
+
+  <!-- ============ ABA 3: DRE COMPLETO ============ -->
+  <div id="tab-dre" class="tab-panel">
+    <div class="filters">
+      <div class="form-group">
+        <label>Mês/Ano</label>
+        <input type="month" id="filtroDreMes" onchange="renderDRE()">
+      </div>
+      <div class="form-group">
+        <label>Visualização</label>
+        <select id="dreVisao" onchange="renderDRE()">
+          <option value="consolidado">Consolidado</option>
+          <option value="veiculo">Por Veículo (detalhado)</option>
+        </select>
+      </div>
+      <button class="btn btn-success" onclick="gerarPDF()">&#128196; Gerar PDF</button>
+    </div>
+    <div id="dreContainer"></div>
+  </div>
+
+  <!-- ============ ABA 4: GERENCIAMENTO ============ -->
+  <div id="tab-gerenciamento" class="tab-panel">
+    <div class="sub-tabs">
+      <button class="sub-tab-btn active" onclick="switchSubTab('veiculos', this)">Veículos</button>
+      <button class="sub-tab-btn" onclick="switchSubTab('catFicha', this)">Categorias de Ficha</button>
+      <button class="sub-tab-btn" onclick="switchSubTab('catDesp', this)">Categorias de Despesa Geral</button>
+    </div>
+
+    <!-- Sub-aba: Veículos -->
+    <div id="subtab-veiculos" class="card">
+      <div class="card-title">&#128666; Veículos Cadastrados</div>
+      <div class="form-row mb-12">
+        <div class="form-group flex-1">
+          <label>Nome / Placa</label>
+          <input type="text" id="inputVeiculo" placeholder="Ex: Veículo 5 — ABC-1234" onkeydown="if(event.key==='Enter')addVeiculo()">
+        </div>
+        <button class="btn btn-primary" onclick="addVeiculo()">+ Adicionar</button>
+      </div>
+      <div id="veiculosTable"></div>
+    </div>
+
+    <!-- Sub-aba: Categorias de Ficha -->
+    <div id="subtab-catFicha" class="card" style="display:none">
+      <div class="card-title">&#128204; Categorias de Ficha de Viagem</div>
+      <div class="form-row mb-12">
+        <div class="form-group flex-1">
+          <label>Nome da Categoria</label>
+          <input type="text" id="inputCatFicha" placeholder="Ex: Pedágio" onkeydown="if(event.key==='Enter')addCatFicha()">
+        </div>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="inputCatFichaTipo">
+            <option value="custo">Custo</option>
+            <option value="receita">Receita</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addCatFicha()">+ Adicionar</button>
+      </div>
+      <div id="catFichaTable"></div>
+    </div>
+
+    <!-- Sub-aba: Categorias de Despesa Geral -->
+    <div id="subtab-catDesp" class="card" style="display:none">
+      <div class="card-title">&#128204; Categorias de Despesas Gerais (DRE)</div>
+      <p class="text-muted mb-12">O "Grupo DRE" define onde cada categoria aparece no Demonstrativo de Resultado.</p>
+      <div class="form-row mb-12">
+        <div class="form-group flex-1">
+          <label>Nome da Categoria</label>
+          <input type="text" id="inputCatDesp" placeholder="Ex: Aluguel" onkeydown="if(event.key==='Enter')addCatDesp()">
+        </div>
+        <div class="form-group">
+          <label>Grupo DRE</label>
+          <select id="inputCatDespGrupo">
+            <option value="deducoes">Deduções da Receita Bruta</option>
+            <option value="comercial">Despesas Comerciais</option>
+            <option value="administrativa">Despesas Administrativas</option>
+            <option value="financeira">Despesas Financeiras</option>
+            <option value="outras_desp">Outras Despesas Operacionais</option>
+            <option value="outras_rec">Outras Receitas Operacionais</option>
+            <option value="nao_operacional">Outras Receitas/Despesas (não oper.)</option>
+            <option value="tributos">Provisão IRPJ/CSLL</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="addCatDesp()">+ Adicionar</button>
+      </div>
+      <div id="catDespTable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: FICHA DE VIAGEM ===== -->
+<div class="modal-overlay" id="modalFicha">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalFichaTitle">Nova Ficha de Viagem</h3>
+      <button class="modal-close" onclick="fecharModal('modalFicha')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="fichaData">
+        </div>
+        <div class="form-group">
+          <label>Veículo</label>
+          <select id="fichaVeiculo"></select>
+        </div>
+        <div class="form-group flex-1">
+          <label>Descrição da Viagem</label>
+          <input type="text" id="fichaDescricao" placeholder="Rota, destino, cliente..." style="width:100%">
+        </div>
+      </div>
+
+      <div class="card-title mt-12">Lançamentos</div>
+      <div id="fichaItensContainer"></div>
+      <div class="form-row mt-8">
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="fichaItemCat"></select>
+        </div>
+        <div class="form-group">
+          <label>Descrição (opcional)</label>
+          <input type="text" id="fichaItemDesc" placeholder="Detalhe">
+        </div>
+        <div class="form-group">
+          <label>Valor (R$)</label>
+          <input type="number" id="fichaItemValor" step="0.01" min="0" placeholder="0,00">
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="addFichaItem()">+ Adicionar</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModal('modalFicha')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarFicha" onclick="salvarFicha()">Salvar Ficha</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: DESPESA GERAL ===== -->
+<div class="modal-overlay" id="modalDespesa">
+  <div class="modal" style="width:500px">
+    <div class="modal-header">
+      <h3 id="modalDespTitle">Nova Despesa Geral</h3>
+      <button class="modal-close" onclick="fecharModal('modalDespesa')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Mês/Ano</label>
+          <input type="month" id="despMes">
+        </div>
+        <div class="form-group flex-1">
+          <label>Categoria</label>
+          <select id="despCategoria" style="width:100%"></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Valor (R$)</label>
+          <input type="number" id="despValor" step="0.01" min="0" placeholder="0,00">
+        </div>
+        <div class="form-group flex-1">
+          <label>Descrição</label>
+          <input type="text" id="despDescricao" placeholder="Detalhe da despesa" style="width:100%">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModal('modalDespesa')">Cancelar</button>
+      <button class="btn btn-primary" id="btnSalvarDesp" onclick="salvarDespesa()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: EDITAR CATEGORIA DE FICHA ===== -->
+<div class="modal-overlay" id="modalEditCatFicha">
+  <div class="modal" style="width:450px">
+    <div class="modal-header">
+      <h3>Editar Categoria de Ficha</h3>
+      <button class="modal-close" onclick="fecharModal('modalEditCatFicha')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label>Nome da Categoria</label>
+          <input type="text" id="editCatFichaNome" style="width:100%">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label>Tipo</label>
+          <select id="editCatFichaTipo" style="width:100%">
+            <option value="custo">Custo</option>
+            <option value="receita">Receita</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModal('modalEditCatFicha')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEditCatFicha()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: EDITAR CATEGORIA DE DESPESA GERAL ===== -->
+<div class="modal-overlay" id="modalEditCatDesp">
+  <div class="modal" style="width:500px">
+    <div class="modal-header">
+      <h3>Editar Categoria de Despesa Geral</h3>
+      <button class="modal-close" onclick="fecharModal('modalEditCatDesp')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label>Nome da Categoria</label>
+          <input type="text" id="editCatDespNome" style="width:100%">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group flex-1">
+          <label>Grupo DRE</label>
+          <select id="editCatDespGrupo" style="width:100%">
+            <option value="deducoes">Deduções da Receita Bruta</option>
+            <option value="comercial">Despesas Comerciais</option>
+            <option value="administrativa">Despesas Administrativas</option>
+            <option value="financeira">Despesas Financeiras</option>
+            <option value="outras_desp">Outras Despesas Operacionais</option>
+            <option value="outras_rec">Outras Receitas Operacionais</option>
+            <option value="nao_operacional">Outras Receitas/Despesas (não oper.)</option>
+            <option value="tributos">Provisão IRPJ/CSLL</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharModal('modalEditCatDesp')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEditCatDesp()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   DADOS — INICIALIZAÇÃO E PERSISTÊNCIA
+   ================================================================ */
+
+const STORAGE_KEY = 'gestao_despesas_transporte';
+
+/* Grupos DRE disponíveis para categorias de despesa geral */
+const GRUPOS_DRE = {
+  deducoes:        'Deduções da Receita Bruta',
+  comercial:       'Despesas Comerciais',
+  administrativa:  'Despesas Administrativas',
+  financeira:      'Despesas Financeiras',
+  outras_desp:     'Outras Despesas Operacionais',
+  outras_rec:      'Outras Receitas Operacionais',
+  nao_operacional: 'Outras Receitas/Despesas',
+  tributos:        'Provisão IRPJ/CSLL'
+};
+
+/* Dados padrão para primeira carga */
+function dadosPadrao() {
+  return {
+    veiculos: [
+      { id: 'v1', nome: 'Veículo 1' },
+      { id: 'v2', nome: 'Veículo 2' },
+      { id: 'v3', nome: 'Veículo 3' },
+      { id: 'v4', nome: 'Veículo 4' }
+    ],
+    categoriasFicha: [
+      { id: 'cf1', nome: 'Salário', tipo: 'custo' },
+      { id: 'cf2', nome: 'Combustível', tipo: 'custo' },
+      { id: 'cf3', nome: 'Despesas com Veículo', tipo: 'custo' },
+      { id: 'cf4', nome: 'Receita', tipo: 'receita' }
+    ],
+    categoriasDespGeral: [
+      { id: 'cd1', nome: 'ISS sobre Serviços',                    grupo: 'deducoes' },
+      { id: 'cd2', nome: 'PIS sobre Faturamento',                  grupo: 'deducoes' },
+      { id: 'cd3', nome: 'COFINS sobre Faturamento',               grupo: 'deducoes' },
+      { id: 'cd4', nome: 'Publicidade',                            grupo: 'comercial' },
+      { id: 'cd5', nome: 'Assessoria RH',                          grupo: 'administrativa' },
+      { id: 'cd6', nome: 'Sistema',                                grupo: 'administrativa' },
+      { id: 'cd7', nome: 'IPVA',                                   grupo: 'administrativa' },
+      { id: 'cd8', nome: 'Seguros',                                grupo: 'administrativa' },
+      { id: 'cd9', nome: 'Despesas bancárias',                     grupo: 'financeira' },
+      { id: 'cd10', nome: 'Juros sobre empréstimo',                grupo: 'financeira' },
+      { id: 'cd11', nome: 'Provisão para IRPJ',                    grupo: 'tributos' },
+      { id: 'cd12', nome: 'Provisão para CSLL',                    grupo: 'tributos' }
+    ],
+    fichas: [],
+    despesasGerais: [],
+    nomeEmpresa: 'Empresa de Transporte Ltda.'
+  };
+}
+
+let dados;
+
+function carregarDados() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try { dados = JSON.parse(raw); } catch { dados = dadosPadrao(); }
+  } else {
+    dados = dadosPadrao();
+  }
+  // Migração de campos
+  if (!dados.veiculos) dados.veiculos = [];
+  if (!dados.categoriasFicha) dados.categoriasFicha = [];
+  if (!dados.categoriasDespGeral) dados.categoriasDespGeral = [];
+  if (!dados.fichas) dados.fichas = [];
+  if (!dados.despesasGerais) dados.despesasGerais = [];
+  if (!dados.nomeEmpresa) dados.nomeEmpresa = 'Empresa de Transporte Ltda.';
+  // Migrar categorias sem grupo
+  dados.categoriasDespGeral.forEach(c => {
+    if (!c.grupo) c.grupo = 'administrativa';
+  });
+}
+
+function salvarDados() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+}
+
+function gerarId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+}
+
+/* ================================================================
+   UTILIDADES DE FORMATAÇÃO
+   ================================================================ */
+
+function fmtBRL(valor) {
+  return 'R$ ' + Number(valor).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtData(str) {
+  if (!str) return '—';
+  const [y, m, d] = str.split('-');
+  return d + '/' + m + '/' + y;
+}
+
+function fmtMes(str) {
+  if (!str) return '—';
+  const [y, m] = str.split('-');
+  const meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  return meses[parseInt(m) - 1] + '/' + y;
+}
+
+function fmtMesCurto(str) {
+  if (!str) return '—';
+  const [y, m] = str.split('-');
+  const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return meses[parseInt(m) - 1] + '/' + y;
+}
+
+function mesAtual() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/* ================================================================
+   NAVEGAÇÃO — ABAS PRINCIPAIS E SUB-ABAS
+   ================================================================ */
+
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  const map = { fichas: 0, despesas: 1, dre: 2, gerenciamento: 3 };
+  btns[map[id]].classList.add('active');
+  if (id === 'fichas') renderFichas();
+  if (id === 'despesas') renderDespesas();
+  if (id === 'dre') renderDRE();
+  if (id === 'gerenciamento') { renderVeiculos(); renderCatFicha(); renderCatDesp(); }
+}
+
+function switchSubTab(id, btn) {
+  document.querySelectorAll('[id^="subtab-"]').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('subtab-' + id).style.display = 'block';
+  btn.classList.add('active');
+}
+
+function fecharModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+/* ================================================================
+   GERENCIAMENTO — VEÍCULOS
+   ================================================================ */
+
+function renderVeiculos() {
+  let html = '<table><thead><tr><th>Nome / Placa</th><th class="text-center" style="width:120px">Ações</th></tr></thead><tbody>';
+  if (dados.veiculos.length === 0) {
+    html += '<tr><td colspan="2" class="empty-state">Nenhum veículo cadastrado</td></tr>';
+  }
+  dados.veiculos.forEach(v => {
+    html += '<tr><td>' + escapeHtml(v.nome) + '</td>';
+    html += '<td class="text-center"><div class="actions-cell" style="justify-content:center">';
+    html += '<button class="btn btn-outline btn-sm" onclick="editarVeiculo(\'' + v.id + '\')">&#9998;</button>';
+    html += '<button class="btn btn-danger btn-sm" onclick="excluirVeiculo(\'' + v.id + '\')">&#10005;</button>';
+    html += '</div></td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('veiculosTable').innerHTML = html;
+}
+
+function addVeiculo() {
+  const input = document.getElementById('inputVeiculo');
+  const nome = input.value.trim();
+  if (!nome) return;
+  dados.veiculos.push({ id: gerarId(), nome });
+  input.value = '';
+  salvarDados();
+  renderVeiculos();
+}
+
+function editarVeiculo(id) {
+  const v = dados.veiculos.find(x => x.id === id);
+  if (!v) return;
+  const novo = prompt('Editar veículo:', v.nome);
+  if (novo !== null && novo.trim()) {
+    v.nome = novo.trim();
+    salvarDados();
+    renderVeiculos();
+  }
+}
+
+function excluirVeiculo(id) {
+  if (!confirm('Excluir este veículo? Fichas associadas não serão removidas.')) return;
+  dados.veiculos = dados.veiculos.filter(x => x.id !== id);
+  salvarDados();
+  renderVeiculos();
+}
+
+/* ================================================================
+   GERENCIAMENTO — CATEGORIAS DE FICHA
+   ================================================================ */
+
+function renderCatFicha() {
+  let html = '<table><thead><tr><th>Categoria</th><th style="width:100px">Tipo</th><th class="text-center" style="width:120px">Ações</th></tr></thead><tbody>';
+  if (dados.categoriasFicha.length === 0) {
+    html += '<tr><td colspan="3" class="empty-state">Nenhuma categoria cadastrada</td></tr>';
+  }
+  dados.categoriasFicha.forEach(c => {
+    const badge = c.tipo === 'receita' ? '<span class="badge badge-green">Receita</span>' : '<span class="badge badge-blue">Custo</span>';
+    html += '<tr><td>' + escapeHtml(c.nome) + '</td><td>' + badge + '</td>';
+    html += '<td class="text-center"><div class="actions-cell" style="justify-content:center">';
+    html += '<button class="btn btn-outline btn-sm" onclick="editarCatFicha(\'' + c.id + '\')">&#9998;</button>';
+    html += '<button class="btn btn-danger btn-sm" onclick="excluirCatFicha(\'' + c.id + '\')">&#10005;</button>';
+    html += '</div></td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('catFichaTable').innerHTML = html;
+}
+
+function addCatFicha() {
+  const input = document.getElementById('inputCatFicha');
+  const nome = input.value.trim();
+  if (!nome) return;
+  const tipo = document.getElementById('inputCatFichaTipo').value;
+  dados.categoriasFicha.push({ id: gerarId(), nome, tipo });
+  input.value = '';
+  salvarDados();
+  renderCatFicha();
+}
+
+let editCatFichaId = null;
+
+function editarCatFicha(id) {
+  const c = dados.categoriasFicha.find(x => x.id === id);
+  if (!c) return;
+  editCatFichaId = id;
+  document.getElementById('editCatFichaNome').value = c.nome;
+  document.getElementById('editCatFichaTipo').value = c.tipo;
+  document.getElementById('modalEditCatFicha').classList.add('open');
+}
+
+function salvarEditCatFicha() {
+  const c = dados.categoriasFicha.find(x => x.id === editCatFichaId);
+  if (!c) return;
+  const nome = document.getElementById('editCatFichaNome').value.trim();
+  if (!nome) { alert('Informe o nome da categoria.'); return; }
+  c.nome = nome;
+  c.tipo = document.getElementById('editCatFichaTipo').value;
+  salvarDados();
+  fecharModal('modalEditCatFicha');
+  renderCatFicha();
+}
+
+function excluirCatFicha(id) {
+  if (!confirm('Excluir esta categoria?')) return;
+  dados.categoriasFicha = dados.categoriasFicha.filter(x => x.id !== id);
+  salvarDados();
+  renderCatFicha();
+}
+
+/* ================================================================
+   GERENCIAMENTO — CATEGORIAS DE DESPESA GERAL
+   ================================================================ */
+
+function badgeGrupo(grupo) {
+  const cores = {
+    deducoes: 'badge-red', comercial: 'badge-orange', administrativa: 'badge-blue',
+    financeira: 'badge-gray', outras_desp: 'badge-gray', outras_rec: 'badge-green',
+    nao_operacional: 'badge-gray', tributos: 'badge-red'
+  };
+  return '<span class="badge ' + (cores[grupo] || 'badge-gray') + '">' + escapeHtml(GRUPOS_DRE[grupo] || grupo) + '</span>';
+}
+
+function renderCatDesp() {
+  let html = '<table><thead><tr><th>Categoria</th><th>Grupo DRE</th><th class="text-center" style="width:120px">Ações</th></tr></thead><tbody>';
+  if (dados.categoriasDespGeral.length === 0) {
+    html += '<tr><td colspan="3" class="empty-state">Nenhuma categoria cadastrada</td></tr>';
+  }
+  dados.categoriasDespGeral.forEach(c => {
+    html += '<tr><td>' + escapeHtml(c.nome) + '</td>';
+    html += '<td>' + badgeGrupo(c.grupo) + '</td>';
+    html += '<td class="text-center"><div class="actions-cell" style="justify-content:center">';
+    html += '<button class="btn btn-outline btn-sm" onclick="editarCatDesp(\'' + c.id + '\')">&#9998;</button>';
+    html += '<button class="btn btn-danger btn-sm" onclick="excluirCatDesp(\'' + c.id + '\')">&#10005;</button>';
+    html += '</div></td></tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('catDespTable').innerHTML = html;
+}
+
+function addCatDesp() {
+  const input = document.getElementById('inputCatDesp');
+  const nome = input.value.trim();
+  if (!nome) return;
+  const grupo = document.getElementById('inputCatDespGrupo').value;
+  dados.categoriasDespGeral.push({ id: gerarId(), nome, grupo });
+  input.value = '';
+  salvarDados();
+  renderCatDesp();
+}
+
+let editCatDespId = null;
+
+function editarCatDesp(id) {
+  const c = dados.categoriasDespGeral.find(x => x.id === id);
+  if (!c) return;
+  editCatDespId = id;
+  document.getElementById('editCatDespNome').value = c.nome;
+  document.getElementById('editCatDespGrupo').value = c.grupo;
+  document.getElementById('modalEditCatDesp').classList.add('open');
+}
+
+function salvarEditCatDesp() {
+  const c = dados.categoriasDespGeral.find(x => x.id === editCatDespId);
+  if (!c) return;
+  const nome = document.getElementById('editCatDespNome').value.trim();
+  if (!nome) { alert('Informe o nome da categoria.'); return; }
+  c.nome = nome;
+  c.grupo = document.getElementById('editCatDespGrupo').value;
+  salvarDados();
+  fecharModal('modalEditCatDesp');
+  renderCatDesp();
+}
+
+function excluirCatDesp(id) {
+  if (!confirm('Excluir esta categoria?')) return;
+  dados.categoriasDespGeral = dados.categoriasDespGeral.filter(x => x.id !== id);
+  salvarDados();
+  renderCatDesp();
+}
+
+/* ================================================================
+   FICHAS DE VIAGEM — LISTAGEM E FILTROS
+   ================================================================ */
+
+function populateVeiculoSelects() {
+  const selects = ['filtroFichaVeiculo', 'fichaVeiculo'];
+  selects.forEach(sid => {
+    const sel = document.getElementById(sid);
+    if (!sel) return;
+    const val = sel.value;
+    if (sid === 'filtroFichaVeiculo') {
+      sel.innerHTML = '<option value="">Todos</option>';
+    } else {
+      sel.innerHTML = '';
+    }
+    dados.veiculos.forEach(v => {
+      sel.innerHTML += '<option value="' + v.id + '">' + escapeHtml(v.nome) + '</option>';
+    });
+    sel.value = val;
+  });
+}
+
+function populateCatFichaSelect() {
+  const sel = document.getElementById('fichaItemCat');
+  if (!sel) return;
+  sel.innerHTML = '';
+  dados.categoriasFicha.forEach(c => {
+    const tag = c.tipo === 'receita' ? ' [Receita]' : '';
+    sel.innerHTML += '<option value="' + c.id + '">' + escapeHtml(c.nome) + tag + '</option>';
+  });
+}
+
+function nomeVeiculo(id) {
+  const v = dados.veiculos.find(x => x.id === id);
+  return v ? v.nome : '(removido)';
+}
+
+function nomeCategoria(id, lista) {
+  const c = lista.find(x => x.id === id);
+  return c ? c.nome : '(removida)';
+}
+
+function renderFichas() {
+  populateVeiculoSelects();
+  const filtroV = document.getElementById('filtroFichaVeiculo').value;
+  const filtroM = document.getElementById('filtroFichaMes').value;
+
+  let fichas = [...dados.fichas];
+  if (filtroV) fichas = fichas.filter(f => f.veiculoId === filtroV);
+  if (filtroM) fichas = fichas.filter(f => f.data && f.data.startsWith(filtroM));
+  fichas.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+
+  let html = '<table><thead><tr>';
+  html += '<th style="width:80px">Ficha</th><th style="width:90px">Data</th><th>Veículo</th><th>Descrição</th>';
+  html += '<th class="text-right">Receitas</th><th class="text-right">Custos</th><th class="text-right">Resultado</th>';
+  html += '<th class="text-center" style="width:100px">Ações</th>';
+  html += '</tr></thead><tbody>';
+
+  if (fichas.length === 0) {
+    html += '<tr><td colspan="8" class="empty-state">Nenhuma ficha encontrada</td></tr>';
+  }
+
+  fichas.forEach(f => {
+    const receitas = (f.itens || []).filter(i => {
+      const cat = dados.categoriasFicha.find(c => c.id === i.categoriaId);
+      return cat && cat.tipo === 'receita';
+    }).reduce((s, i) => s + Number(i.valor), 0);
+    const custos = (f.itens || []).filter(i => {
+      const cat = dados.categoriasFicha.find(c => c.id === i.categoriaId);
+      return cat && cat.tipo === 'custo';
+    }).reduce((s, i) => s + Number(i.valor), 0);
+    const resultado = receitas - custos;
+    const resCls = resultado >= 0 ? 'text-green' : 'text-red';
+
+    html += '<tr>';
+    html += '<td class="text-muted">#' + escapeHtml(f.numero || '') + '</td>';
+    html += '<td>' + fmtData(f.data) + '</td>';
+    html += '<td><strong>' + escapeHtml(nomeVeiculo(f.veiculoId)) + '</strong></td>';
+    html += '<td>' + escapeHtml(f.descricao || '') + '</td>';
+    html += '<td class="text-right text-green">' + fmtBRL(receitas) + '</td>';
+    html += '<td class="text-right text-red">' + fmtBRL(custos) + '</td>';
+    html += '<td class="text-right text-bold ' + resCls + '">' + fmtBRL(resultado) + '</td>';
+    html += '<td class="text-center"><div class="actions-cell" style="justify-content:center">';
+    html += '<button class="btn btn-outline btn-sm" onclick="editarFicha(\'' + f.id + '\')">&#9998;</button>';
+    html += '<button class="btn btn-danger btn-sm" onclick="excluirFicha(\'' + f.id + '\')">&#10005;</button>';
+    html += '</div></td>';
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  document.getElementById('fichasTableContainer').innerHTML = html;
+}
+
+/* ================================================================
+   FICHAS DE VIAGEM — MODAL (CRIAR / EDITAR)
+   ================================================================ */
+
+let fichaEditId = null;
+let fichaItensTemp = [];
+
+function abrirModalFicha(id) {
+  fichaEditId = id || null;
+  fichaItensTemp = [];
+
+  populateVeiculoSelects();
+  populateCatFichaSelect();
+
+  if (fichaEditId) {
+    const f = dados.fichas.find(x => x.id === fichaEditId);
+    if (!f) return;
+    document.getElementById('modalFichaTitle').textContent = 'Editar Ficha #' + f.numero;
+    document.getElementById('fichaData').value = f.data || '';
+    document.getElementById('fichaVeiculo').value = f.veiculoId || '';
+    document.getElementById('fichaDescricao').value = f.descricao || '';
+    fichaItensTemp = JSON.parse(JSON.stringify(f.itens || []));
+  } else {
+    document.getElementById('modalFichaTitle').textContent = 'Nova Ficha de Viagem';
+    document.getElementById('fichaData').value = new Date().toISOString().split('T')[0];
+    document.getElementById('fichaDescricao').value = '';
+    if (dados.veiculos.length > 0) {
+      document.getElementById('fichaVeiculo').value = dados.veiculos[0].id;
+    }
+  }
+
+  renderFichaItens();
+  document.getElementById('modalFicha').classList.add('open');
+}
+
+function renderFichaItens() {
+  let html = '<table><thead><tr><th>Categoria</th><th>Descrição</th><th class="text-right">Valor</th><th style="width:50px"></th></tr></thead><tbody>';
+  if (fichaItensTemp.length === 0) {
+    html += '<tr><td colspan="4" class="text-center text-muted" style="padding:16px">Adicione lançamentos abaixo</td></tr>';
+  }
+  fichaItensTemp.forEach((item, idx) => {
+    const cat = dados.categoriasFicha.find(c => c.id === item.categoriaId);
+    const catNome = cat ? cat.nome : '(removida)';
+    const badge = cat && cat.tipo === 'receita' ? '<span class="badge badge-green" style="margin-left:6px">R</span>' : '';
+    html += '<tr>';
+    html += '<td>' + escapeHtml(catNome) + badge + '</td>';
+    html += '<td>' + escapeHtml(item.descricao || '') + '</td>';
+    html += '<td class="text-right">' + fmtBRL(item.valor) + '</td>';
+    html += '<td class="text-center"><button class="btn btn-danger btn-sm" onclick="removeFichaItem(' + idx + ')">&#10005;</button></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('fichaItensContainer').innerHTML = html;
+}
+
+function addFichaItem() {
+  const catId = document.getElementById('fichaItemCat').value;
+  const desc = document.getElementById('fichaItemDesc').value.trim();
+  const valor = parseFloat(document.getElementById('fichaItemValor').value);
+  if (!catId || isNaN(valor) || valor <= 0) {
+    alert('Preencha a categoria e um valor positivo.');
+    return;
+  }
+  fichaItensTemp.push({ categoriaId: catId, descricao: desc, valor });
+  document.getElementById('fichaItemDesc').value = '';
+  document.getElementById('fichaItemValor').value = '';
+  renderFichaItens();
+}
+
+function removeFichaItem(idx) {
+  fichaItensTemp.splice(idx, 1);
+  renderFichaItens();
+}
+
+function salvarFicha() {
+  const data = document.getElementById('fichaData').value;
+  const veiculoId = document.getElementById('fichaVeiculo').value;
+  const descricao = document.getElementById('fichaDescricao').value.trim();
+
+  if (!data || !veiculoId) {
+    alert('Preencha a data e selecione um veículo.');
+    return;
+  }
+  if (fichaItensTemp.length === 0) {
+    alert('Adicione ao menos um lançamento.');
+    return;
+  }
+
+  if (fichaEditId) {
+    const f = dados.fichas.find(x => x.id === fichaEditId);
+    if (f) {
+      f.data = data;
+      f.veiculoId = veiculoId;
+      f.descricao = descricao;
+      f.itens = fichaItensTemp;
+    }
+  } else {
+    const numero = String(dados.fichas.length + 1).padStart(4, '0');
+    dados.fichas.push({
+      id: gerarId(),
+      numero,
+      data,
+      veiculoId,
+      descricao,
+      itens: fichaItensTemp
+    });
+  }
+
+  salvarDados();
+  fecharModal('modalFicha');
+  renderFichas();
+}
+
+function editarFicha(id) {
+  abrirModalFicha(id);
+}
+
+function excluirFicha(id) {
+  if (!confirm('Excluir esta ficha de viagem?')) return;
+  dados.fichas = dados.fichas.filter(x => x.id !== id);
+  salvarDados();
+  renderFichas();
+}
+
+/* ================================================================
+   DESPESAS GERAIS — LISTAGEM
+   ================================================================ */
+
+function populateCatDespSelect() {
+  const sel = document.getElementById('despCategoria');
+  if (!sel) return;
+  sel.innerHTML = '';
+  dados.categoriasDespGeral.forEach(c => {
+    sel.innerHTML += '<option value="' + c.id + '">' + escapeHtml(c.nome) + '</option>';
+  });
+}
+
+function renderDespesas() {
+  populateCatDespSelect();
+  const filtroM = document.getElementById('filtroDespMes').value;
+  let lista = [...dados.despesasGerais];
+  if (filtroM) lista = lista.filter(d => d.mes === filtroM);
+  lista.sort((a, b) => (b.mes || '').localeCompare(a.mes || ''));
+
+  let total = 0;
+  let html = '<table><thead><tr>';
+  html += '<th>Mês/Ano</th><th>Categoria</th><th>Grupo DRE</th><th>Descrição</th>';
+  html += '<th class="text-right">Valor</th>';
+  html += '<th class="text-center" style="width:100px">Ações</th>';
+  html += '</tr></thead><tbody>';
+
+  if (lista.length === 0) {
+    html += '<tr><td colspan="6" class="empty-state">Nenhuma despesa geral encontrada</td></tr>';
+  }
+
+  lista.forEach(d => {
+    total += Number(d.valor);
+    const cat = dados.categoriasDespGeral.find(c => c.id === d.categoriaId);
+    html += '<tr>';
+    html += '<td>' + fmtMesCurto(d.mes) + '</td>';
+    html += '<td>' + escapeHtml(nomeCategoria(d.categoriaId, dados.categoriasDespGeral)) + '</td>';
+    html += '<td>' + (cat ? badgeGrupo(cat.grupo) : '') + '</td>';
+    html += '<td>' + escapeHtml(d.descricao || '') + '</td>';
+    html += '<td class="text-right text-red">' + fmtBRL(d.valor) + '</td>';
+    html += '<td class="text-center"><div class="actions-cell" style="justify-content:center">';
+    html += '<button class="btn btn-outline btn-sm" onclick="editarDespesa(\'' + d.id + '\')">&#9998;</button>';
+    html += '<button class="btn btn-danger btn-sm" onclick="excluirDespesa(\'' + d.id + '\')">&#10005;</button>';
+    html += '</div></td>';
+    html += '</tr>';
+  });
+
+  if (lista.length > 0) {
+    html += '<tr style="background:#111419"><td colspan="4" class="text-right text-bold">Total</td>';
+    html += '<td class="text-right text-bold text-red">' + fmtBRL(total) + '</td><td></td></tr>';
+  }
+
+  html += '</tbody></table>';
+  document.getElementById('despesasTableContainer').innerHTML = html;
+}
+
+/* ================================================================
+   DESPESAS GERAIS — MODAL (CRIAR / EDITAR)
+   ================================================================ */
+
+let despEditId = null;
+
+function abrirModalDespesa(id) {
+  despEditId = id || null;
+  populateCatDespSelect();
+
+  if (despEditId) {
+    const d = dados.despesasGerais.find(x => x.id === despEditId);
+    if (!d) return;
+    document.getElementById('modalDespTitle').textContent = 'Editar Despesa Geral';
+    document.getElementById('despMes').value = d.mes || '';
+    document.getElementById('despCategoria').value = d.categoriaId || '';
+    document.getElementById('despValor').value = d.valor || '';
+    document.getElementById('despDescricao').value = d.descricao || '';
+  } else {
+    document.getElementById('modalDespTitle').textContent = 'Nova Despesa Geral';
+    document.getElementById('despMes').value = mesAtual();
+    document.getElementById('despValor').value = '';
+    document.getElementById('despDescricao').value = '';
+  }
+
+  document.getElementById('modalDespesa').classList.add('open');
+}
+
+function salvarDespesa() {
+  const mes = document.getElementById('despMes').value;
+  const categoriaId = document.getElementById('despCategoria').value;
+  const valor = parseFloat(document.getElementById('despValor').value);
+  const descricao = document.getElementById('despDescricao').value.trim();
+
+  if (!mes || !categoriaId || isNaN(valor) || valor <= 0) {
+    alert('Preencha todos os campos corretamente.');
+    return;
+  }
+
+  if (despEditId) {
+    const d = dados.despesasGerais.find(x => x.id === despEditId);
+    if (d) {
+      d.mes = mes;
+      d.categoriaId = categoriaId;
+      d.valor = valor;
+      d.descricao = descricao;
+    }
+  } else {
+    dados.despesasGerais.push({ id: gerarId(), mes, categoriaId, valor, descricao });
+  }
+
+  salvarDados();
+  fecharModal('modalDespesa');
+  renderDespesas();
+}
+
+function editarDespesa(id) {
+  abrirModalDespesa(id);
+}
+
+function excluirDespesa(id) {
+  if (!confirm('Excluir esta despesa?')) return;
+  dados.despesasGerais = dados.despesasGerais.filter(x => x.id !== id);
+  salvarDados();
+  renderDespesas();
+}
+
+/* ================================================================
+   DRE — CÁLCULO COMPLETO (MODELO OFICIAL Lei 6.404/76)
+   ================================================================ */
+
+function calcularDRE(mesAno) {
+  /* ----- 1. Fichas do período ----- */
+  const fichasMes = dados.fichas.filter(f => !mesAno || (f.data && f.data.startsWith(mesAno)));
+
+  /* ----- 2. Receita bruta por veículo e custos por veículo/categoria ----- */
+  const veiculoData = {};
+  dados.veiculos.forEach(v => {
+    veiculoData[v.id] = { nome: v.nome, receita: 0, custos: {} };
+    dados.categoriasFicha.filter(c => c.tipo === 'custo').forEach(c => {
+      veiculoData[v.id].custos[c.id] = { nome: c.nome, valor: 0 };
+    });
+  });
+
+  fichasMes.forEach(f => {
+    if (!veiculoData[f.veiculoId]) {
+      veiculoData[f.veiculoId] = { nome: nomeVeiculo(f.veiculoId), receita: 0, custos: {} };
+      dados.categoriasFicha.filter(c => c.tipo === 'custo').forEach(c => {
+        veiculoData[f.veiculoId].custos[c.id] = { nome: c.nome, valor: 0 };
+      });
+    }
+    (f.itens || []).forEach(item => {
+      const cat = dados.categoriasFicha.find(c => c.id === item.categoriaId);
+      if (!cat) return;
+      if (cat.tipo === 'receita') {
+        veiculoData[f.veiculoId].receita += Number(item.valor);
+      } else {
+        if (!veiculoData[f.veiculoId].custos[cat.id]) {
+          veiculoData[f.veiculoId].custos[cat.id] = { nome: cat.nome, valor: 0 };
+        }
+        veiculoData[f.veiculoId].custos[cat.id].valor += Number(item.valor);
+      }
+    });
+  });
+
+  // Totais de custo e resultado por veículo
+  Object.values(veiculoData).forEach(v => {
+    v.totalCustos = Object.values(v.custos).reduce((s, c) => s + c.valor, 0);
+  });
+
+  /* ----- 3. Receita operacional bruta (total) ----- */
+  const receitaBruta = Object.values(veiculoData).reduce((s, v) => s + v.receita, 0);
+
+  /* ----- 4. Despesas gerais do período, agrupadas por grupo DRE ----- */
+  const despMes = dados.despesasGerais.filter(d => !mesAno || d.mes === mesAno);
+
+  const gruposCalc = {};
+  Object.keys(GRUPOS_DRE).forEach(g => { gruposCalc[g] = { categorias: {}, total: 0 }; });
+
+  despMes.forEach(d => {
+    const cat = dados.categoriasDespGeral.find(c => c.id === d.categoriaId);
+    const grupo = cat ? cat.grupo : 'administrativa';
+    if (!gruposCalc[grupo]) gruposCalc[grupo] = { categorias: {}, total: 0 };
+    if (!gruposCalc[grupo].categorias[d.categoriaId]) {
+      gruposCalc[grupo].categorias[d.categoriaId] = { nome: cat ? cat.nome : '(removida)', valor: 0 };
+    }
+    gruposCalc[grupo].categorias[d.categoriaId].valor += Number(d.valor);
+    gruposCalc[grupo].total += Number(d.valor);
+  });
+
+  /* ----- 5. Cadeia de cálculos DRE padrão ----- */
+  const deducoes         = gruposCalc.deducoes.total;
+  const receitaLiquida   = receitaBruta - deducoes;
+
+  const custoServicos    = Object.values(veiculoData).reduce((s, v) => s + v.totalCustos, 0);
+  const lucroBruto       = receitaLiquida - custoServicos;
+
+  const despComerciais   = gruposCalc.comercial.total;
+  const despAdmin        = gruposCalc.administrativa.total;
+  const outrasDesp       = gruposCalc.outras_desp.total;
+  const outrasRec        = gruposCalc.outras_rec.total;
+  const totalDespOp      = despComerciais + despAdmin + outrasDesp - outrasRec;
+
+  const resultadoAntesFinanceiro = lucroBruto - totalDespOp; // EBIT
+
+  const despFinanceiras  = gruposCalc.financeira.total;
+  const resultadoFinanceiro = -despFinanceiras; // negativo = despesa líquida
+
+  const resultadoOperacional = resultadoAntesFinanceiro + resultadoFinanceiro;
+
+  const outrasNaoOp      = gruposCalc.nao_operacional.total;
+  const lair             = resultadoOperacional - outrasNaoOp;
+
+  const tributos         = gruposCalc.tributos.total;
+  const resultadoLiquido = lair - tributos;
+
+  return {
+    veiculoData,
+    receitaBruta,
+    gruposCalc,
+    deducoes,
+    receitaLiquida,
+    custoServicos,
+    lucroBruto,
+    despComerciais,
+    despAdmin,
+    outrasDesp,
+    outrasRec,
+    totalDespOp,
+    resultadoAntesFinanceiro,
+    despFinanceiras,
+    resultadoFinanceiro,
+    resultadoOperacional,
+    outrasNaoOp,
+    lair,
+    tributos,
+    resultadoLiquido
+  };
+}
+
+/* ================================================================
+   DRE — RENDERIZAÇÃO HTML (TELA)
+   ================================================================ */
+
+function renderDRE() {
+  const mesAno = document.getElementById('filtroDreMes').value;
+  const visao = document.getElementById('dreVisao').value;
+  const dre = calcularDRE(mesAno);
+
+  const H = []; // Array de linhas HTML
+
+  function row(cls, label, valor, sign) {
+    const signHtml = sign ? '<span class="dre-sign ' +
+      (sign === '=' ? 'dre-equal' : sign === '(-)' ? 'dre-minus' : 'dre-plus') +
+      '">' + sign + '</span> ' : '';
+    const valorHtml = valor !== null && valor !== undefined ? fmtBRL(valor) : '';
+    const valorCls = valor !== null && valor !== undefined ? (valor < 0 ? ' text-red' : valor > 0 ? ' text-green' : '') : '';
+    H.push('<tr class="' + cls + '"><td>' + signHtml + label + '</td><td class="text-right' + valorCls + '">' + valorHtml + '</td></tr>');
+  }
+
+  function separator() { H.push('<tr class="dre-row-separator"><td colspan="2"></td></tr>'); }
+
+  /* Cabeçalho */
+  H.push('<div style="text-align:center;margin-bottom:20px">');
+  H.push('<h2 style="font-size:18px;color:#e0e4ea;margin-bottom:4px">' + escapeHtml(dados.nomeEmpresa) + '</h2>');
+  H.push('<h3 style="font-size:15px;color:#7a8a9e;font-weight:600">Demonstração do Resultado do Exercício (DRE)</h3>');
+  H.push('<p class="text-muted">Período: ' + (mesAno ? fmtMes(mesAno) : 'Acumulado — Todos os períodos') + '</p>');
+  H.push('</div>');
+
+  H.push('<div class="card" style="padding:0;overflow:hidden">');
+  H.push('<table class="dre-table"><colgroup><col style="width:auto"><col style="width:180px"></colgroup><tbody>');
+
+  /* ===== RECEITA OPERACIONAL BRUTA ===== */
+  row('dre-row-section', 'RECEITA OPERACIONAL BRUTA', null);
+
+  if (visao === 'veiculo') {
+    Object.entries(dre.veiculoData).forEach(([vid, v]) => {
+      if (v.receita > 0 || !mesAno) {
+        row('', '<span class="dre-l2">Prestação de Serviços — ' + escapeHtml(v.nome) + '</span>', v.receita);
+      }
+    });
+  } else {
+    row('', '<span class="dre-l1">Prestação de Serviços de Transporte</span>', dre.receitaBruta);
+  }
+  row('dre-row-subtotal', '<span class="dre-l0">TOTAL RECEITA BRUTA</span>', dre.receitaBruta);
+
+  /* ===== DEDUÇÕES DA RECEITA BRUTA ===== */
+  separator();
+  row('dre-row-section', 'DEDUÇÕES DA RECEITA BRUTA', null);
+  Object.values(dre.gruposCalc.deducoes.categorias).forEach(c => {
+    if (c.valor > 0) row('', '<span class="dre-l2">(−) ' + escapeHtml(c.nome) + '</span>', -c.valor, '(-)');
+  });
+  if (dre.deducoes === 0) row('', '<span class="dre-l2 text-muted">Nenhum lançamento no período</span>', null);
+  row('dre-row-subtotal', '<span class="dre-l0">TOTAL DEDUÇÕES</span>', -dre.deducoes);
+
+  /* ===== RECEITA OPERACIONAL LÍQUIDA ===== */
+  separator();
+  row('dre-row-total', '<span class="dre-l0">(=) RECEITA OPERACIONAL LÍQUIDA</span>', dre.receitaLiquida, '=');
+
+  /* ===== CUSTO DOS SERVIÇOS PRESTADOS ===== */
+  separator();
+  row('dre-row-section', 'CUSTO DOS SERVIÇOS PRESTADOS (CSP)', null);
+
+  if (visao === 'veiculo') {
+    Object.entries(dre.veiculoData).forEach(([vid, v]) => {
+      const temCusto = v.totalCustos > 0;
+      if (!temCusto && mesAno) return;
+      row('', '<span class="dre-l1" style="font-weight:600">' + escapeHtml(v.nome) + '</span>', null);
+      Object.values(v.custos).forEach(c => {
+        if (c.valor > 0) row('', '<span class="dre-l3">(−) ' + escapeHtml(c.nome) + '</span>', -c.valor, '(-)');
+      });
+      row('', '<span class="dre-l2" style="font-weight:600">Subtotal ' + escapeHtml(v.nome) + '</span>', -v.totalCustos);
+    });
+  } else {
+    // Consolidar custos por categoria
+    const custosConsolidados = {};
+    Object.values(dre.veiculoData).forEach(v => {
+      Object.entries(v.custos).forEach(([cid, c]) => {
+        if (!custosConsolidados[cid]) custosConsolidados[cid] = { nome: c.nome, valor: 0 };
+        custosConsolidados[cid].valor += c.valor;
+      });
+    });
+    Object.values(custosConsolidados).forEach(c => {
+      if (c.valor > 0) row('', '<span class="dre-l2">(−) ' + escapeHtml(c.nome) + '</span>', -c.valor, '(-)');
+    });
+  }
+  row('dre-row-subtotal', '<span class="dre-l0">TOTAL CSP</span>', -dre.custoServicos);
+
+  /* ===== LUCRO BRUTO ===== */
+  separator();
+  row('dre-row-total', '<span class="dre-l0">(=) LUCRO BRUTO</span>', dre.lucroBruto, '=');
+
+  /* ===== DESPESAS OPERACIONAIS ===== */
+  separator();
+  row('dre-row-section', 'DESPESAS OPERACIONAIS', null);
+
+  // Despesas Comerciais
+  if (dre.despComerciais > 0) {
+    row('', '<span class="dre-l1" style="font-weight:600">(−) Despesas Comerciais</span>', null, '(-)');
+    Object.values(dre.gruposCalc.comercial.categorias).forEach(c => {
+      if (c.valor > 0) row('', '<span class="dre-l3">' + escapeHtml(c.nome) + '</span>', -c.valor);
+    });
+    row('', '<span class="dre-l2" style="font-weight:600">Subtotal Despesas Comerciais</span>', -dre.despComerciais);
+  }
+
+  // Despesas Administrativas
+  if (dre.despAdmin > 0) {
+    row('', '<span class="dre-l1" style="font-weight:600">(−) Despesas Gerais e Administrativas</span>', null, '(-)');
+    Object.values(dre.gruposCalc.administrativa.categorias).forEach(c => {
+      if (c.valor > 0) row('', '<span class="dre-l3">' + escapeHtml(c.nome) + '</span>', -c.valor);
+    });
+    row('', '<span class="dre-l2" style="font-weight:600">Subtotal Despesas Administrativas</span>', -dre.despAdmin);
+  }
+
+  // Outras Despesas Operacionais
+  if (dre.outrasDesp > 0) {
+    row('', '<span class="dre-l1" style="font-weight:600">(−) Outras Despesas Operacionais</span>', null, '(-)');
+    Object.values(dre.gruposCalc.outras_desp.categorias).forEach(c => {
+      if (c.valor > 0) row('', '<span class="dre-l3">' + escapeHtml(c.nome) + '</span>', -c.valor);
+    });
+  }
+
+  // Outras Receitas Operacionais
+  if (dre.outrasRec > 0) {
+    row('', '<span class="dre-l1" style="font-weight:600">(+) Outras Receitas Operacionais</span>', null, '(+)');
+    Object.values(dre.gruposCalc.outras_rec.categorias).forEach(c => {
+      if (c.valor > 0) row('', '<span class="dre-l3">' + escapeHtml(c.nome) + '</span>', c.valor);
+    });
+  }
+
+  row('dre-row-subtotal', '<span class="dre-l0">TOTAL DESPESAS OPERACIONAIS</span>', -dre.totalDespOp);
+
+  /* ===== RESULTADO ANTES DO RESULTADO FINANCEIRO (EBIT) ===== */
+  separator();
+  row('dre-row-total', '<span class="dre-l0">(=) RESULTADO ANTES DO RESULT. FINANCEIRO (EBIT)</span>', dre.resultadoAntesFinanceiro, '=');
+
+  /* ===== RESULTADO FINANCEIRO ===== */
+  separator();
+  row('dre-row-section', 'RESULTADO FINANCEIRO', null);
+  if (dre.despFinanceiras > 0) {
+    row('', '<span class="dre-l1" style="font-weight:600">(−) Despesas Financeiras</span>', null, '(-)');
+    Object.values(dre.gruposCalc.financeira.categorias).forEach(c => {
+      if (c.valor > 0) row('', '<span class="dre-l3">' + escapeHtml(c.nome) + '</span>', -c.valor);
+    });
+    row('', '<span class="dre-l2" style="font-weight:600">Total Despesas Financeiras</span>', -dre.despFinanceiras);
+  } else {
+    row('', '<span class="dre-l2 text-muted">Nenhuma despesa financeira no período</span>', null);
+  }
+
+  /* ===== RESULTADO OPERACIONAL ===== */
+  separator();
+  row('dre-row-total', '<span class="dre-l0">(=) RESULTADO OPERACIONAL</span>', dre.resultadoOperacional, '=');
+
+  /* ===== OUTRAS RECEITAS E DESPESAS (NÃO OPERACIONAIS) ===== */
+  if (dre.outrasNaoOp > 0) {
+    separator();
+    row('dre-row-section', 'OUTRAS RECEITAS E DESPESAS', null);
+    Object.values(dre.gruposCalc.nao_operacional.categorias).forEach(c => {
+      if (c.valor > 0) row('', '<span class="dre-l2">(−) ' + escapeHtml(c.nome) + '</span>', -c.valor, '(-)');
+    });
+  }
+
+  /* ===== RESULTADO ANTES DO IR/CSLL (LAIR) ===== */
+  separator();
+  row('dre-row-total', '<span class="dre-l0">(=) RESULTADO ANTES DO IR E CSLL (LAIR)</span>', dre.lair, '=');
+
+  /* ===== PROVISÃO PARA IR E CSLL ===== */
+  if (dre.tributos > 0) {
+    separator();
+    row('dre-row-section', 'PROVISÃO PARA IMPOSTOS SOBRE O LUCRO', null);
+    Object.values(dre.gruposCalc.tributos.categorias).forEach(c => {
+      if (c.valor > 0) row('', '<span class="dre-l2">(−) ' + escapeHtml(c.nome) + '</span>', -c.valor, '(-)');
+    });
+    row('dre-row-subtotal', '<span class="dre-l0">TOTAL TRIBUTOS SOBRE O LUCRO</span>', -dre.tributos);
+  }
+
+  /* ===== RESULTADO LÍQUIDO DO EXERCÍCIO ===== */
+  separator();
+  row('dre-row-grand', '(=) RESULTADO LÍQUIDO DO EXERCÍCIO', dre.resultadoLiquido, '=');
+
+  H.push('</tbody></table></div>');
+
+  /* ===== INDICADORES COMPLEMENTARES ===== */
+  const margemBruta = dre.receitaLiquida !== 0 ? (dre.lucroBruto / dre.receitaLiquida * 100) : 0;
+  const margemOp = dre.receitaLiquida !== 0 ? (dre.resultadoOperacional / dre.receitaLiquida * 100) : 0;
+  const margemLiq = dre.receitaLiquida !== 0 ? (dre.resultadoLiquido / dre.receitaLiquida * 100) : 0;
+  const ebitda = dre.resultadoAntesFinanceiro; // Simplificado (sem D&A separados)
+
+  H.push('<div class="card mt-12">');
+  H.push('<div class="card-title">Indicadores Complementares</div>');
+  H.push('<table class="dre-table"><tbody>');
+  H.push('<tr><td class="dre-l1">Margem Bruta</td><td class="text-right text-bold">' + margemBruta.toFixed(2) + '%</td></tr>');
+  H.push('<tr><td class="dre-l1">Margem Operacional</td><td class="text-right text-bold">' + margemOp.toFixed(2) + '%</td></tr>');
+  H.push('<tr><td class="dre-l1">Margem Líquida</td><td class="text-right text-bold">' + margemLiq.toFixed(2) + '%</td></tr>');
+  H.push('<tr><td class="dre-l1">EBIT</td><td class="text-right text-bold">' + fmtBRL(ebitda) + '</td></tr>');
+  H.push('</tbody></table></div>');
+
+  /* ===== DETALHAMENTO POR VEÍCULO (se visão consolidada, mostrar resumo) ===== */
+  if (visao === 'consolidado') {
+    H.push('<div class="card mt-12">');
+    H.push('<div class="card-title">Resultado por Veículo (Resumo)</div>');
+    H.push('<table><thead><tr><th>Veículo</th><th class="text-right">Receita</th><th class="text-right">CSP</th><th class="text-right">Resultado Bruto</th></tr></thead><tbody>');
+    let totR = 0, totC = 0;
+    Object.entries(dre.veiculoData).forEach(([vid, v]) => {
+      const res = v.receita - v.totalCustos;
+      totR += v.receita;
+      totC += v.totalCustos;
+      const cls = res >= 0 ? 'text-green' : 'text-red';
+      H.push('<tr><td><strong>' + escapeHtml(v.nome) + '</strong></td>');
+      H.push('<td class="text-right text-green">' + fmtBRL(v.receita) + '</td>');
+      H.push('<td class="text-right text-red">' + fmtBRL(v.totalCustos) + '</td>');
+      H.push('<td class="text-right text-bold ' + cls + '">' + fmtBRL(res) + '</td></tr>');
+    });
+    const totRes = totR - totC;
+    H.push('<tr style="background:#111419;font-weight:700"><td>TOTAL</td>');
+    H.push('<td class="text-right text-green">' + fmtBRL(totR) + '</td>');
+    H.push('<td class="text-right text-red">' + fmtBRL(totC) + '</td>');
+    H.push('<td class="text-right ' + (totRes >= 0 ? 'text-green' : 'text-red') + '">' + fmtBRL(totRes) + '</td></tr>');
+    H.push('</tbody></table></div>');
+  }
+
+  document.getElementById('dreContainer').innerHTML = H.join('');
+}
+
+/* ================================================================
+   PDF — GERAÇÃO DO DRE PADRÃO EM PDF (jsPDF)
+   ================================================================ */
+
+function gerarPDF() {
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) {
+    alert('Biblioteca jsPDF não carregada. Verifique sua conexão com a internet.');
+    return;
+  }
+
+  const mesAno = document.getElementById('filtroDreMes').value;
+  const dre = calcularDRE(mesAno);
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const pageW = 210;
+  const mL = 14;
+  const mR = 14;
+  const cW = pageW - mL - mR;
+  let y = 0;
+  let pageNum = 1;
+
+  /* --- Utilidades PDF --- */
+  function newPage() {
+    doc.addPage();
+    y = 12;
+    pageNum++;
+  }
+
+  function checkPage(need) {
+    if (y + need > 278) newPage();
+  }
+
+  function drawFooter(pg) {
+    doc.setTextColor(160, 160, 160);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Gerado em ' + new Date().toLocaleString('pt-BR'), mL, 290);
+    doc.text('Página ' + pg, pageW - mR, 290, { align: 'right' });
+  }
+
+  function lineH(yPos, color) {
+    doc.setDrawColor(color || 200);
+    doc.line(mL, yPos, pageW - mR, yPos);
+  }
+
+  function txtL(text, xOffset, bold, size, color) {
+    doc.setFontSize(size || 9);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    if (color) doc.setTextColor(color[0], color[1], color[2]);
+    else doc.setTextColor(30, 30, 50);
+    doc.text(text, mL + (xOffset || 0), y);
+  }
+
+  function txtR(text, bold, size, color) {
+    doc.setFontSize(size || 9);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    if (color) doc.setTextColor(color[0], color[1], color[2]);
+    else doc.setTextColor(30, 30, 50);
+    doc.text(text, pageW - mR, y, { align: 'right' });
+  }
+
+  function sectionHeader(text) {
+    checkPage(10);
+    doc.setFillColor(26, 26, 46);
+    doc.rect(mL, y - 4.5, cW, 7, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text(text, mL + 3, y);
+    y += 7;
+  }
+
+  function dreRow(label, valor, indent, bold, negColor) {
+    checkPage(6);
+    txtL(label, indent || 0, bold, 9, null);
+    if (valor !== null && valor !== undefined) {
+      const c = negColor && valor < 0 ? [217, 74, 74] : (valor >= 0 ? [45, 130, 80] : [217, 74, 74]);
+      txtR(fmtBRL(valor), bold, 9, c);
+    }
+    y += 5.5;
+  }
+
+  function subtotalRow(label, valor) {
+    checkPage(8);
+    lineH(y - 4, 180);
+    doc.setFillColor(244, 246, 249);
+    doc.rect(mL, y - 4.5, cW, 7, 'F');
+    txtL(label, 2, true, 9);
+    const c = valor >= 0 ? [45, 130, 80] : [217, 74, 74];
+    txtR(fmtBRL(valor), true, 9, c);
+    y += 7;
+  }
+
+  function totalRow(label, valor) {
+    checkPage(10);
+    lineH(y - 4, 30);
+    doc.setFillColor(232, 236, 242);
+    doc.rect(mL, y - 4.5, cW, 8, 'F');
+    txtL(label, 2, true, 10);
+    const c = valor >= 0 ? [45, 130, 80] : [217, 74, 74];
+    txtR(fmtBRL(valor), true, 10, c);
+    y += 9;
+    lineH(y - 4, 30);
+  }
+
+  function grandTotalRow(label, valor) {
+    checkPage(14);
+    y += 2;
+    doc.setFillColor(26, 26, 46);
+    doc.rect(mL, y - 5, cW, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(label, mL + 4, y + 1);
+    doc.text(fmtBRL(valor), pageW - mR - 4, y + 1, { align: 'right' });
+    y += 10;
+  }
+
+  function gap(h) { y += (h || 3); }
+
+  /* ===== CABEÇALHO DO PDF ===== */
+  doc.setFillColor(26, 26, 46);
+  doc.rect(0, 0, pageW, 28, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text(dados.nomeEmpresa, pageW / 2, 11, { align: 'center' });
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Demonstração do Resultado do Exercício (DRE)', pageW / 2, 18, { align: 'center' });
+  doc.setFontSize(9);
+  doc.text('Período: ' + (mesAno ? fmtMes(mesAno) : 'Acumulado'), pageW / 2, 24, { align: 'center' });
+
+  y = 36;
+
+  /* ===== RECEITA BRUTA ===== */
+  sectionHeader('RECEITA OPERACIONAL BRUTA');
+  dreRow('Prestação de Serviços de Transporte', dre.receitaBruta, 4);
+  subtotalRow('TOTAL RECEITA BRUTA', dre.receitaBruta);
+
+  /* ===== DEDUÇÕES ===== */
+  gap();
+  sectionHeader('DEDUÇÕES DA RECEITA BRUTA');
+  Object.values(dre.gruposCalc.deducoes.categorias).forEach(c => {
+    if (c.valor > 0) dreRow('(−) ' + c.nome, -c.valor, 6, false, true);
+  });
+  if (dre.deducoes === 0) dreRow('(sem lançamentos)', null, 6);
+  subtotalRow('TOTAL DEDUÇÕES', -dre.deducoes);
+
+  /* ===== RECEITA LÍQUIDA ===== */
+  gap();
+  totalRow('(=) RECEITA OPERACIONAL LÍQUIDA', dre.receitaLiquida);
+
+  /* ===== CSP ===== */
+  gap();
+  sectionHeader('CUSTO DOS SERVIÇOS PRESTADOS (CSP)');
+  // Por veículo
+  Object.entries(dre.veiculoData).forEach(([vid, v]) => {
+    if (v.totalCustos === 0 && mesAno) return;
+    dreRow(v.nome, null, 4, true);
+    Object.values(v.custos).forEach(c => {
+      if (c.valor > 0) dreRow('(−) ' + c.nome, -c.valor, 10, false, true);
+    });
+    dreRow('Subtotal ' + v.nome, -v.totalCustos, 6, true);
+    gap(1);
+  });
+  subtotalRow('TOTAL CSP', -dre.custoServicos);
+
+  /* ===== LUCRO BRUTO ===== */
+  gap();
+  totalRow('(=) LUCRO BRUTO', dre.lucroBruto);
+
+  /* ===== DESPESAS OPERACIONAIS ===== */
+  gap();
+  sectionHeader('DESPESAS OPERACIONAIS');
+
+  if (dre.despComerciais > 0) {
+    dreRow('(−) Despesas Comerciais', null, 4, true);
+    Object.values(dre.gruposCalc.comercial.categorias).forEach(c => {
+      if (c.valor > 0) dreRow(c.nome, -c.valor, 10);
+    });
+    dreRow('Subtotal Comerciais', -dre.despComerciais, 6, true);
+    gap(1);
+  }
+
+  if (dre.despAdmin > 0) {
+    dreRow('(−) Despesas Gerais e Administrativas', null, 4, true);
+    Object.values(dre.gruposCalc.administrativa.categorias).forEach(c => {
+      if (c.valor > 0) dreRow(c.nome, -c.valor, 10);
+    });
+    dreRow('Subtotal Administrativas', -dre.despAdmin, 6, true);
+    gap(1);
+  }
+
+  if (dre.outrasDesp > 0) {
+    dreRow('(−) Outras Despesas Operacionais', null, 4, true);
+    Object.values(dre.gruposCalc.outras_desp.categorias).forEach(c => {
+      if (c.valor > 0) dreRow(c.nome, -c.valor, 10);
+    });
+  }
+
+  if (dre.outrasRec > 0) {
+    dreRow('(+) Outras Receitas Operacionais', null, 4, true);
+    Object.values(dre.gruposCalc.outras_rec.categorias).forEach(c => {
+      if (c.valor > 0) dreRow(c.nome, c.valor, 10);
+    });
+  }
+
+  subtotalRow('TOTAL DESPESAS OPERACIONAIS', -dre.totalDespOp);
+
+  /* ===== EBIT ===== */
+  gap();
+  totalRow('(=) RESULTADO ANTES DO RESULT. FINANCEIRO (EBIT)', dre.resultadoAntesFinanceiro);
+
+  /* ===== RESULTADO FINANCEIRO ===== */
+  gap();
+  sectionHeader('RESULTADO FINANCEIRO');
+  if (dre.despFinanceiras > 0) {
+    dreRow('(−) Despesas Financeiras', null, 4, true);
+    Object.values(dre.gruposCalc.financeira.categorias).forEach(c => {
+      if (c.valor > 0) dreRow(c.nome, -c.valor, 10);
+    });
+    dreRow('Total Despesas Financeiras', -dre.despFinanceiras, 6, true);
+  } else {
+    dreRow('(sem lançamentos)', null, 6);
+  }
+
+  /* ===== RESULTADO OPERACIONAL ===== */
+  gap();
+  totalRow('(=) RESULTADO OPERACIONAL', dre.resultadoOperacional);
+
+  /* ===== OUTRAS RECEITAS/DESPESAS NÃO OPERACIONAIS ===== */
+  if (dre.outrasNaoOp > 0) {
+    gap();
+    sectionHeader('OUTRAS RECEITAS E DESPESAS');
+    Object.values(dre.gruposCalc.nao_operacional.categorias).forEach(c => {
+      if (c.valor > 0) dreRow('(−) ' + c.nome, -c.valor, 6, false, true);
+    });
+  }
+
+  /* ===== LAIR ===== */
+  gap();
+  totalRow('(=) RESULTADO ANTES DO IR E CSLL (LAIR)', dre.lair);
+
+  /* ===== TRIBUTOS ===== */
+  if (dre.tributos > 0) {
+    gap();
+    sectionHeader('PROVISÃO PARA IMPOSTOS SOBRE O LUCRO');
+    Object.values(dre.gruposCalc.tributos.categorias).forEach(c => {
+      if (c.valor > 0) dreRow('(−) ' + c.nome, -c.valor, 6, false, true);
+    });
+    subtotalRow('TOTAL TRIBUTOS', -dre.tributos);
+  }
+
+  /* ===== RESULTADO LÍQUIDO ===== */
+  gap(4);
+  grandTotalRow('(=) RESULTADO LÍQUIDO DO EXERCÍCIO', dre.resultadoLiquido);
+
+  /* ===== INDICADORES ===== */
+  gap(6);
+  checkPage(30);
+  const margemBruta = dre.receitaLiquida ? (dre.lucroBruto / dre.receitaLiquida * 100) : 0;
+  const margemOp = dre.receitaLiquida ? (dre.resultadoOperacional / dre.receitaLiquida * 100) : 0;
+  const margemLiq = dre.receitaLiquida ? (dre.resultadoLiquido / dre.receitaLiquida * 100) : 0;
+
+  sectionHeader('INDICADORES');
+  dreRow('Margem Bruta', null, 4, true);
+  txtR(margemBruta.toFixed(2) + '%', true, 9); y += 5.5;
+  dreRow('Margem Operacional', null, 4, true);
+  txtR(margemOp.toFixed(2) + '%', true, 9); y += 5.5;
+  dreRow('Margem Líquida', null, 4, true);
+  txtR(margemLiq.toFixed(2) + '%', true, 9); y += 5.5;
+  dreRow('EBIT', null, 4, true);
+  txtR(fmtBRL(dre.resultadoAntesFinanceiro), true, 9); y += 5.5;
+
+  /* ===== RODAPÉS ===== */
+  for (let i = 1; i <= pageNum; i++) {
+    doc.setPage(i);
+    drawFooter(i);
+  }
+
+  const nomeArquivo = 'DRE_' + (mesAno || 'acumulado') + '.pdf';
+  doc.save(nomeArquivo);
+}
+
+/* ================================================================
+   INICIALIZAÇÃO
+   ================================================================ */
+
+function init() {
+  carregarDados();
+
+  const hoje = new Date();
+  document.getElementById('headerDate').textContent = hoje.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  document.getElementById('filtroDreMes').value = mesAtual();
+  document.getElementById('filtroDespMes').value = '';
+  document.getElementById('filtroFichaMes').value = '';
+
+  renderFichas();
+  renderVeiculos();
+  renderCatFicha();
+  renderCatDesp();
+}
+
+// Fechar modal ao clicar fora
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+});
+
+init();
+</script>
+</body>
+</html>
