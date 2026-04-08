@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestão de Despesas — Transporte</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -372,6 +373,8 @@ tr:hover td { background: #f1f5f9; }
   <svg viewBox="0 0 24 24"><path d="M18 18.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5-1.5.67-1.5 1.5.67 1.5 1.5 1.5zM19.5 9.5L21.46 13H17V9.5h2.5zM6 18.5c.83 0 1.5-.67 1.5-1.5S6.83 15.5 6 15.5 4.5 16.17 4.5 17 5.17 18.5 6 18.5zM20 8h-3V4H3c-1.1 0-2 .9-2 2v11h2c0 1.66 1.34 3 3 3s3-1.34 3-3h6c0 1.66 1.34 3 3 3s3-1.34 3-3h2v-5l-3-4z"/></svg>
   <h1>Gestão de Despesas — Transporte</h1>
   <span id="headerDate"></span>
+  <span id="statusConexao" style="font-size:11px;padding:4px 10px;border-radius:10px;margin-left:8px"></span>
+  <button class="btn btn-sm" style="background:#f59e0b;color:#000;font-size:11px;margin-left:4px" onclick="migrarLocalParaSupabase()" id="btnMigrar" title="Migrar dados do localStorage para o Supabase">&#8593; Migrar dados</button>
 </div>
 
 <!-- ===== NAVIGATION TABS ===== -->
@@ -662,7 +665,17 @@ tr:hover td { background: #f1f5f9; }
 
 <script>
 /* ================================================================
-   DADOS — INICIALIZAÇÃO E PERSISTÊNCIA
+   SUPABASE — CONFIGURAÇÃO
+   ================================================================ */
+
+// ⚠️ TROQUE PELAS SUAS CREDENCIAIS DO SUPABASE:
+const SUPABASE_URL = 'https://kaysnkwxqbrtcpflletu.supabase.co';   // ← coloque sua URL aqui
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtheXNua3d4cWJydGNwZmxsZXR1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NjY2NTAsImV4cCI6MjA5MTI0MjY1MH0.2NZZzL8JcZ_NMmzOAa8cZHrx2MZxm-UoAQ6v9UDti1I';                   // ← coloque sua chave anon aqui
+
+const _supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+/* ================================================================
+   DADOS — INICIALIZAÇÃO E PERSISTÊNCIA (SUPABASE + FALLBACK LOCAL)
    ================================================================ */
 
 const STORAGE_KEY = 'gestao_despesas_transporte';
@@ -715,29 +728,82 @@ function dadosPadrao() {
 }
 
 let dados;
+let _salvando = false;
+let _salvarPendente = false;
 
-function carregarDados() {
+async function carregarDados() {
+  // Tenta carregar do Supabase primeiro
+  if (_supabase && SUPABASE_URL !== 'https://SEU_PROJETO.supabase.co') {
+    try {
+      const { data: row, error } = await _supabase
+        .from('dre_dados')
+        .select('dados')
+        .eq('chave', STORAGE_KEY)
+        .single();
+
+      if (!error && row && row.dados) {
+        dados = row.dados;
+        // Sincroniza para localStorage como cache
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+        _migrarCampos();
+        return;
+      }
+    } catch (e) {
+      console.warn('Supabase indisponível, usando localStorage:', e);
+    }
+  }
+
+  // Fallback: localStorage
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
     try { dados = JSON.parse(raw); } catch { dados = dadosPadrao(); }
   } else {
     dados = dadosPadrao();
   }
-  // Migração de campos
+  _migrarCampos();
+}
+
+function _migrarCampos() {
   if (!dados.veiculos) dados.veiculos = [];
   if (!dados.categoriasFicha) dados.categoriasFicha = [];
   if (!dados.categoriasDespGeral) dados.categoriasDespGeral = [];
   if (!dados.fichas) dados.fichas = [];
   if (!dados.despesasGerais) dados.despesasGerais = [];
   if (!dados.nomeEmpresa) dados.nomeEmpresa = 'Empresa de Transporte Ltda.';
-  // Migrar categorias sem grupo
   dados.categoriasDespGeral.forEach(c => {
     if (!c.grupo) c.grupo = 'administrativa';
   });
 }
 
-function salvarDados() {
+async function salvarDados() {
+  // Sempre salva no localStorage (cache imediato)
   localStorage.setItem(STORAGE_KEY, JSON.stringify(dados));
+
+  // Salva no Supabase se configurado
+  if (_supabase && SUPABASE_URL !== 'https://SEU_PROJETO.supabase.co') {
+    if (_salvando) {
+      _salvarPendente = true;
+      return;
+    }
+    _salvando = true;
+    try {
+      const { error } = await _supabase
+        .from('dre_dados')
+        .upsert(
+          { chave: STORAGE_KEY, dados: dados },
+          { onConflict: 'chave' }
+        );
+      if (error) console.error('Erro ao salvar no Supabase:', error);
+    } catch (e) {
+      console.warn('Falha ao salvar no Supabase:', e);
+    } finally {
+      _salvando = false;
+      if (_salvarPendente) {
+        _salvarPendente = false;
+        salvarDados(); // Salva a versão mais recente
+      }
+    }
+  }
 }
 
 function gerarId() {
@@ -1956,11 +2022,59 @@ function gerarPDF() {
 }
 
 /* ================================================================
+   MIGRAÇÃO localStorage → Supabase
+   ================================================================ */
+
+async function migrarLocalParaSupabase() {
+  if (!_supabase || SUPABASE_URL === 'https://SEU_PROJETO.supabase.co') {
+    alert('Configure a URL e chave do Supabase antes de migrar.\n\nEdite SUPABASE_URL e SUPABASE_KEY no código.');
+    return;
+  }
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    alert('Nenhum dado encontrado no localStorage para migrar.');
+    return;
+  }
+  if (!confirm('Isso vai enviar os dados locais deste navegador para o Supabase (nuvem).\nDados existentes na nuvem serão substituídos.\n\nDeseja continuar?')) return;
+
+  try {
+    const dadosLocal = JSON.parse(raw);
+    const { error } = await _supabase
+      .from('dre_dados')
+      .upsert(
+        { chave: STORAGE_KEY, dados: dadosLocal },
+        { onConflict: 'chave' }
+      );
+    if (error) throw error;
+    alert('✅ Dados migrados com sucesso para o Supabase!\n\nAgora todos que acessarem o sistema verão os mesmos dados.');
+  } catch (e) {
+    alert('❌ Erro ao migrar: ' + e.message);
+    console.error(e);
+  }
+}
+
+function atualizarStatusConexao() {
+  const el = document.getElementById('statusConexao');
+  const btn = document.getElementById('btnMigrar');
+  if (!_supabase || SUPABASE_URL === 'https://SEU_PROJETO.supabase.co') {
+    el.textContent = '● Local';
+    el.style.background = '#fef3c7';
+    el.style.color = '#92400e';
+    btn.style.display = 'inline-flex';
+  } else {
+    el.textContent = '● Nuvem';
+    el.style.background = '#dcfce7';
+    el.style.color = '#166534';
+    btn.style.display = 'none';
+  }
+}
+
+/* ================================================================
    INICIALIZAÇÃO
    ================================================================ */
 
-function init() {
-  carregarDados();
+async function init() {
+  await carregarDados();
 
   const hoje = new Date();
   document.getElementById('headerDate').textContent = hoje.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -1973,6 +2087,14 @@ function init() {
   renderVeiculos();
   renderCatFicha();
   renderCatDesp();
+
+  atualizarStatusConexao();
+  if (!_supabase || SUPABASE_URL === 'https://SEU_PROJETO.supabase.co') {
+    console.warn('⚠️ Supabase NÃO configurado. Os dados estão salvando apenas no localStorage (local).');
+    console.warn('Para ativar a nuvem, edite SUPABASE_URL e SUPABASE_KEY no início do script.');
+  } else {
+    console.log('✅ Supabase conectado. Dados sincronizados na nuvem.');
+  }
 }
 
 // Fechar modal ao clicar fora
